@@ -11,11 +11,13 @@ import sklearn.model_selection
 import torch
 import matplotlib.pyplot as plt
 
+
 def collapse_small_categories(df, col, min_count=10, other_label="others"):
     counts = df[col].value_counts()
     rare = counts[counts < min_count].index
     df[col] = df[col].where(~df[col].isin(rare), other_label)
     return df
+
 
 # Load and prepare the data
 df = pd.read_csv("vehicles_clean2.csv", header=0)
@@ -29,14 +31,14 @@ df = pd.get_dummies(df, prefix_sep="_", drop_first=True, dtype=int)
 labels = df["price"]
 df = df.drop(columns="price")
 train_data, test_data, train_labels, test_labels = \
-            sklearn.model_selection.train_test_split(df, labels,
-            test_size=0.2, shuffle=True, random_state=2025)
+    sklearn.model_selection.train_test_split(df, labels,
+                                             test_size=0.2, shuffle=True, random_state=2025)
 
 # Standardize scale for all columns
 train_means = train_data.mean()
 train_stds = train_data.std()
 train_data = (train_data - train_means) / train_stds
-test_data  = (test_data  - train_means) / train_stds
+test_data = (test_data - train_means) / train_stds
 
 # Get some lengths
 ncoeffs = train_data.shape[1]
@@ -48,6 +50,7 @@ nsamples = train_data.shape[0]
 learning_rate = 0.01
 n_iterations = 2000
 print_step = 100
+lambda_reg = 0.01  # L2 regularization strength
 
 # ============================================================
 # Convert data to PyTorch tensors
@@ -86,12 +89,14 @@ for iteration in range(n_iterations):
     # Forward pass: predictions
     Y_pred = X @ W + B
 
-    # Mean squared error 
-    mse = torch.mean((Y_pred - Y) ** 2) 
+    # Mean squared error with L2 regularization
+    mse = torch.mean((Y_pred - Y) ** 2)
+    l2_reg = lambda_reg * torch.sum(W ** 2)  # L2 norm of weights
+    total_cost = mse + l2_reg
 
-    # Compute gradients of MSE with respect to W & B
+    # Compute gradients of total cost with respect to W & B
     # Will be stored in W.grad & B.grad
-    mse.backward()
+    total_cost.backward()
 
     # Gradient descent step: W = W - lr * dW
     with torch.no_grad():
@@ -104,17 +109,20 @@ for iteration in range(n_iterations):
 
     # Evaluate and record cost every eval_step iterations
     if iteration % eval_step == 0:
-        # Training MSE
+        # Training cost (MSE + L2)
         mse_train = mse.item()
-        train_cost_hist.append(mse_train)
-        
-        # Test MSE
+        l2_cost = l2_reg.item()
+        total_train_cost = mse_train + l2_cost
+        train_cost_hist.append(total_train_cost)
+
+        # Test cost (MSE + L2)
         with torch.no_grad():
             Y_pred_test = X_test @ W + B
             mse_test = torch.mean((Y_pred_test - Y_test) ** 2).item()
-            test_cost_hist.append(mse_test)
-        
-        print(f"Iteration {iteration:4d}: Train MSE: {mse_train:.1f} Test MSE: {mse_test:.1f}")
+            total_test_cost = mse_test + l2_cost
+            test_cost_hist.append(total_test_cost)
+
+        print(f"Iteration {iteration:4d}: Train Cost: {total_train_cost:.1f} (MSE: {mse_train:.1f}, L2: {l2_cost:.3f}) Test Cost: {total_test_cost:.1f}")
 
 # Stop tracking gradients on W & B
 W.requires_grad_(False)
@@ -135,4 +143,3 @@ plt.ylabel("Cost (MSE)")
 plt.title("Cost evolution")
 plt.legend()
 plt.show()
-
