@@ -1,10 +1,12 @@
-
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sklearn.model_selection
 import torch
-from torch.utils.data import TensorDataset, DataLoader
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader, TensorDataset
+
+matplotlib.use('TkAgg')  # To work on Linux
 
 
 def collapse_small_categories(df, col, min_count=10, other_label="others"):
@@ -18,10 +20,12 @@ def collapse_small_categories(df, col, min_count=10, other_label="others"):
 df = pd.read_csv("vehicles_clean2.csv", header=0)
 df = collapse_small_categories(df, "manufacturer", min_count=100)
 
-# Create squared columns for numerical columns
-for col in df.select_dtypes(include=np.number).columns:
-    df[col + "_squared"] = df[col] ** 2
+# Store numerical column indices before one-hot encoding
+numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
+if 'price' in numerical_cols:
+    numerical_cols.remove('price')
 
+# One-hot encode categorical columns
 df = pd.get_dummies(df, prefix_sep="_", drop_first=True, dtype=int)
 labels = df["price"]
 df = df.drop(columns="price")
@@ -34,6 +38,10 @@ train_stds = train_data.std()
 train_data = (train_data - train_means) / train_stds
 test_data = (test_data - train_means) / train_stds
 
+# Get indices of numerical columns in the final dataframe
+numerical_indices = [i for i, col in enumerate(
+    train_data.columns) if col in numerical_cols]
+
 # Get sizes
 ncoeffs = train_data.shape[1]
 nsamples = train_data.shape[0]
@@ -41,9 +49,9 @@ nsamples = train_data.shape[0]
 # ============================================================
 # Training constants (mini-batch)
 # ============================================================
-batch_size = 256     # chosen between 32 and 4096
-learning_rate = 0.01
-n_epochs = 50
+batch_size = 256      # chosen between 32 and 4096
+learning_rate = 0.001
+n_epochs = 100
 print_step = 1
 
 # Convert data to PyTorch tensors
@@ -59,9 +67,13 @@ loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize weights and bias
 torch.manual_seed(2025)
-W = torch.rand((ncoeffs, 1), dtype=torch.float32) * 2 - 1
+W = (torch.rand((ncoeffs, 1)) * 0.2 - 0.1).requires_grad_()
+V = (torch.rand((len(numerical_indices), 1)) * 0.2 - 0.1).requires_grad_()
 B = torch.zeros((1, 1), dtype=torch.float32)
+
+# Ensure gradients are tracked
 W.requires_grad_(True)
+V.requires_grad_(True)
 B.requires_grad_(True)
 
 # Training loop (epochs + mini-batches)
@@ -72,8 +84,9 @@ for epoch in range(1, n_epochs + 1):
     epoch_losses = []
 
     for X_batch, Y_batch in loader:
-        # Forward
-        Y_pred_batch = X_batch @ W + B
+        # Forward (include second-order term)
+        X_batch_squared = X_batch[:, numerical_indices] ** 2
+        Y_pred_batch = X_batch @ W + X_batch_squared @ V + B
         mse_batch = torch.mean((Y_pred_batch - Y_batch) ** 2)
 
         # Backprop
@@ -82,10 +95,12 @@ for epoch in range(1, n_epochs + 1):
         # Gradient step
         with torch.no_grad():
             W -= learning_rate * W.grad
+            V -= learning_rate * V.grad
             B -= learning_rate * B.grad
 
         # Zero grads
         W.grad.zero_()
+        V.grad.zero_()
         B.grad.zero_()
 
         epoch_losses.append(mse_batch.item())
@@ -96,7 +111,8 @@ for epoch in range(1, n_epochs + 1):
 
     # Evaluate on test set
     with torch.no_grad():
-        Y_pred_test = X_test @ W + B
+        X_test_squared = X_test[:, numerical_indices] ** 2
+        Y_pred_test = X_test @ W + X_test_squared @ V + B
         mse_test = torch.mean((Y_pred_test - Y_test) ** 2).item()
         test_cost_hist.append(mse_test)
 
@@ -106,6 +122,7 @@ for epoch in range(1, n_epochs + 1):
 
 # Stop gradient tracking on parameters
 W.requires_grad_(False)
+V.requires_grad_(False)
 B.requires_grad_(False)
 
 # Final RMSEs

@@ -5,12 +5,16 @@
 # By Juan Carlos Rojas
 # Copyright 2025, Texas Tech University - Costa Rica
 
+import time
+
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sklearn.model_selection
 import torch
-import matplotlib.pyplot as plt
-import time
+
+matplotlib.use('TkAgg')  # To work on Linux
 
 
 def collapse_small_categories(df, col, min_count=10, other_label="others"):
@@ -42,7 +46,8 @@ train_data = (train_data - train_means) / train_stds
 test_data = (test_data - train_means) / train_stds
 
 # Get indices of numerical columns in the final dataframe
-numerical_indices = [i for i, col in enumerate(train_data.columns) if col in numerical_cols]
+numerical_indices = [i for i, col in enumerate(
+    train_data.columns) if col in numerical_cols]
 
 # Get some lengths
 ncoeffs = train_data.shape[1]
