@@ -160,6 +160,18 @@ print(f"Training RMSE: {train_cost_hist[-1]**0.5:.1f}")
 print(f"Test RMSE: {test_cost_hist[-1]**0.5:.1f}")
 print(f"Training time: {training_time:.2f} seconds")
 
+# Compute standard deviation of model coefficients
+with torch.no_grad():
+    W_vals = W.flatten()
+    V_vals = V.flatten()
+    W_std = torch.std(W_vals).item()
+    V_std = torch.std(V_vals).item()
+    combined_std = torch.std(torch.cat([W_vals, V_vals])).item()
+
+print(f"Std dev of W coefficients: {W_std:.6f}")
+print(f"Std dev of V coefficients: {V_std:.6f}")
+print(f"Std dev of all coefficients (W+V): {combined_std:.6f}")
+
 # Plot MSE history
 iterations_hist = [i for i in range(0, n_iterations, eval_step)]
 plt.plot(iterations_hist, train_cost_hist, "b", label="Train MSE")
