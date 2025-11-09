@@ -51,8 +51,7 @@ nsamples = train_data.shape[0]
 # ============================================================
 # Training constants
 # ============================================================
-learning_rate = 0.2
-learning_rate_squared = 0.01
+learning_rate = 0.02
 n_iterations = 10000
 
 # ============================================================
@@ -88,7 +87,7 @@ B.requires_grad_(True)
 # History lists
 train_cost_hist = []
 test_cost_hist = []
-eval_step = 1000    # evaluate and record MSE every eval_step iterations
+eval_step = 100    # evaluate and record MSE every eval_step iterations
 
 # Start timing
 start_time = time.time()
@@ -109,7 +108,7 @@ for iteration in range(n_iterations):
     # Gradient descent step: W = W - lr * dW
     with torch.no_grad():
         W -= learning_rate * W.grad
-        V -= learning_rate_squared * V.grad
+        V -= learning_rate * V.grad
         B -= learning_rate * B.grad
 
     # Zero gradients before next step
@@ -145,8 +144,8 @@ B.requires_grad_(False)
 # Print the final MSEs and training time
 print(f"Training MSE: {train_cost_hist[-1]:.1f}")
 print(f"Test MSE: {test_cost_hist[-1]:.1f}")
-print(f"Training RMSe: {train_cost_hist[-1]**0.5:.1f}")
-print(f"Test RMSe: {test_cost_hist[-1]**0.5:.1f}")
+print(f"Training RMSE: {train_cost_hist[-1]**0.5:.1f}")
+print(f"Test RMSE: {test_cost_hist[-1]**0.5:.1f}")
 print(f"Training time: {training_time:.2f} seconds")
 
 # Plot MSE history
