@@ -1,3 +1,8 @@
+# Mini batch second-order polynomial regressor
+# By Keisy Núñez and Ezequiel Buck
+# Following the examples in VehiclePrice_LinearRegression_GD3.py
+# and Mnist_LassoRegression1 seen in class
+
 # Introduction to Machine Learning
 # Vehicle Price dataset
 # Linear regression solved through gradient descent in PyTorch

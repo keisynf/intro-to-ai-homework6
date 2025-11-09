@@ -1,3 +1,7 @@
+# Second-order polynomial regressor
+# By Keisy Núñez and Ezequiel Buck
+# Based on VehiclePrice_LinearRegression_GD3.py seen in class
+
 # Introduction to Machine Learning
 # Vehicle Price dataset
 # Linear regression solved through gradient descent in PyTorch

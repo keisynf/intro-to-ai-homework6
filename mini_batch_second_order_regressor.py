@@ -1,3 +1,15 @@
+# Mini batch second-order polynomial regressor
+# By Keisy Núñez and Ezequiel Buck
+# Following the examples in VehiclePrice_LinearRegression_GD3.py
+# and Mnist_SoftmaxRegression_SGD3 seen in class
+
+# Introduction to Machine Learning
+# Vehicle Price dataset
+# Linear regression solved through gradient descent in PyTorch
+# Version 3: plot training and test MSE history
+# By Juan Carlos Rojas
+# Copyright 2025, Texas Tech University - Costa Rica
+
 import time
 
 import matplotlib
@@ -52,8 +64,8 @@ nsamples = train_data.shape[0]
 # Training constants (mini-batch)
 # ============================================================
 batch_size = 256      # chosen between 32 and 4096
-learning_rate = 0.001
-n_epochs = 100
+learning_rate = 0.02
+n_epochs = 50
 print_step = 1
 
 # Convert data to PyTorch tensors
