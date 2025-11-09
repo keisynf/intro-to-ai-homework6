@@ -1,3 +1,5 @@
+import time
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -80,6 +82,7 @@ B.requires_grad_(True)
 train_cost_hist = []
 test_cost_hist = []
 
+start_time = time.perf_counter()
 for epoch in range(1, n_epochs + 1):
     epoch_losses = []
 
@@ -120,6 +123,11 @@ for epoch in range(1, n_epochs + 1):
         print(
             f"Epoch {epoch:3d}: Train MSE: {avg_train_mse:.1f} Test MSE: {mse_test:.1f}")
 
+end_time = time.perf_counter()
+training_time = end_time - start_time
+print(
+    f"Total training time: {training_time:.3f} seconds ({training_time / n_epochs:.3f} s/epoch)")
+
 # Stop gradient tracking on parameters
 W.requires_grad_(False)
 V.requires_grad_(False)
@@ -131,7 +139,7 @@ test_rmse = (test_cost_hist[-1]) ** 0.5
 print(f"Training RMSE: {train_rmse:.1f}")
 print(f"Test RMSE: {test_rmse:.1f}")
 
-# Plot MSE history across epochs
+# Plot MSE history across epochs (linear scale)
 plt.plot(range(1, n_epochs + 1), train_cost_hist, "b", label="Train MSE")
 plt.plot(range(1, n_epochs + 1), test_cost_hist, "r", label="Test MSE")
 plt.xlabel("Epoch")
